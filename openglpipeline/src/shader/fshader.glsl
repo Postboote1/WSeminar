@@ -1,10 +1,10 @@
 #version 300 es
-percision mediump float;
+precision mediump float;
 
 in vec3 v_color;
 
-out vex4 fragColor;
+out vec4 fragColor;
 
 void main(){
-    fragColor = vex4(v_color, 1.0)
+    fragColor = vec4(v_color, 1.0);
 }
