@@ -7,11 +7,13 @@ class Renderer
   private canvas : HTMLCanvasElement;
   private gl : WebGL2RenderingContext;
   private program : WebGLProgram;
+  private texture : WebGLTexture;
 
   constructor(){
 
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl2") as WebGL2RenderingContext;
+    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); // flip textur/*  */e
 
     const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexShaderSource)
     const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
@@ -19,23 +21,77 @@ class Renderer
     this.program = this.createProgram(vertexShader, fragmentShader);
     this.gl.useProgram(this.program);
 
-    this.createBuffer([ // create Buffer for location of vertecies
-      -0.5, -0.5,
-      -0.5, 0.5,
-      0.5, -0.5,
+    this.texture = this.loadTexture("assets/texture-mapping-test-image.jpg");
+
+    const positionBuffer = this.createArrayBuffer([ // create Buffer for location of vertecies
+      -0.5, -0.5, // left bottom
+      -0.5, 0.5,// left top
+      0.5, -0.5, // right bottom
+      -0.5,0.5, //left top
+      0.5, 0.5, //right top
+      0.5, -0.5 // right bottom
     ])
 
     this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(0);
 
-    this.createBuffer([// create Buffer for color
-      1,0,0,
-      0,1,0,
-      0,0,1
+    const texCoords = ([
+      0,0,
+      0,1,
+      1,0,
+      0,1,
+      1,1,
+      1,0
+    ])
+    const texBuffer = this.createArrayBuffer(texCoords);
+    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(1);
+
+    const colorBuffer = this.createArrayBuffer([// create Buffer for color
+      1,1,1,
+      1,1,1,
+      1,1,1,
+      1,1,1,
+      1,1,1,
+      1,1,1,
     ]);
 
-    this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
-    this.gl.enableVertexAttribArray(1);
+    this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(2);
+  }
+
+
+  private loadTexture(uri: string) : WebGLTexture {
+    const texture = this.gl.createTexture()!;
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+    this.gl.texImage2D(this.gl.TEXTURE_2D, //placeholder until image is loaded
+      0,
+      this.gl.RGBA,
+      1, // width of texture
+      1, //hight of texture
+      0, // border
+      this.gl.RGBA,
+      this.gl.UNSIGNED_BYTE,
+      new Uint8Array([255,0,0,0,255])
+    );
+
+    const image = new Image();
+    image.onload = () => {
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texImage2D(this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            image);
+        this.gl.generateMipmap(this.gl.TEXTURE_2D);
+
+    }
+    image.src = uri;
+
+    return texture;
+  
   }
 
 
@@ -94,7 +150,7 @@ class Renderer
    * @param data data to store
    * @returns {WebGLBuffer}
    */
-  private createBuffer(data : number[]): WebGLBuffer{
+  private createArrayBuffer(data : number[]): WebGLBuffer{
 
     const buffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
@@ -107,7 +163,10 @@ class Renderer
     this.gl.clearColor(0.5,0.5,0.5,1.0); //background color
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 3)//draw triangle
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)//draw triangle
+
+    //start game loop draw texture  calls draw 60 times per second
+    window.requestAnimationFrame(() => this.draw());
   }
 
 }
