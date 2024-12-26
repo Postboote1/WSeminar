@@ -23,41 +23,30 @@ class Renderer
 
     this.texture = this.loadTexture("assets/texture-mapping-test-image.jpg");
 
-    const positionBuffer = this.createArrayBuffer([ // create Buffer for location of vertecies
-      -0.5, -0.5, // left bottom
-      -0.5, 0.5,// left top
-      0.5, -0.5, // right bottom
-      -0.5,0.5, //left top
-      0.5, 0.5, //right top
-      0.5, -0.5 // right bottom
-    ])
+    const buffer = this.createArrayBuffer(new Float32Array([
+            
+     // x    y     s  t  r  g  b 
+      -0.5, -0.5,  0, 0, 1, 1, 1,     // left bottom
+      -0.5, 0.5,   0, 1, 1, 1, 1,     // left top
+      0.5, -0.5,   1, 0, 1, 1, 1,     // right bottom
+      0.5, 0.5,    1, 1, 1, 1, 1,     // right top
+    ])); 
 
-    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
+    const stride = 2 * Float32Array.BYTES_PER_ELEMENT + 2*Float32Array.BYTES_PER_ELEMENT + 3*Float32Array.BYTES_PER_ELEMENT;
+
+    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, stride, 0);
     this.gl.enableVertexAttribArray(0);
 
-    const texCoords = ([
-      0,0,
-      0,1,
-      1,0,
-      0,1,
-      1,1,
-      1,0
-    ])
-    const texBuffer = this.createArrayBuffer(texCoords);
-    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, stride, 2*Float32Array.BYTES_PER_ELEMENT);
     this.gl.enableVertexAttribArray(1);
 
-    const colorBuffer = this.createArrayBuffer([// create Buffer for color
-      1,1,1,
-      1,1,1,
-      1,1,1,
-      1,1,1,
-      1,1,1,
-      1,1,1,
-    ]);
-
-    this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, stride, 4*Float32Array.BYTES_PER_ELEMENT);
     this.gl.enableVertexAttribArray(2);
+
+    const indexBuffer = this.createIndexBuffer (new Uint8Array([
+      0,1,2,
+      2,1,3
+    ]));
   }
 
 
@@ -150,11 +139,19 @@ class Renderer
    * @param data data to store
    * @returns {WebGLBuffer}
    */
-  private createArrayBuffer(data : number[]): WebGLBuffer{
+  private createArrayBuffer(data : Float32Array): WebGLBuffer{
 
-    const buffer = this.gl.createBuffer();
+    const buffer = this.gl.createBuffer()!;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
+
+    return buffer;
+  }
+//create a Buffer to store indexes of vertecies rather than storing them for each triangle
+  private createIndexBuffer(data: Uint8Array|Uint16Array|Uint32Array): WebGLBuffer{
+    const buffer = this.gl.createBuffer()!;
+  this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
 
     return buffer;
   }
@@ -163,7 +160,8 @@ class Renderer
     this.gl.clearColor(0.5,0.5,0.5,1.0); //background color
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)//draw triangle
+    this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE,0); //draw triangle
+
 
     //start game loop draw texture  calls draw 60 times per second
     window.requestAnimationFrame(() => this.draw());
