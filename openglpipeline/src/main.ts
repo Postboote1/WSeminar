@@ -1,6 +1,6 @@
-import { Renderer } from "./renderer";
+import { Engine } from "./engine";
 
-const renderer = new Renderer();
+const renderer = new Engine();
 renderer.initialize().then(()=>
 {
   renderer.draw();
