@@ -37,17 +37,21 @@ export class Engine {
         this.spriteRenderer.begin();
 
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100000; i++) {
             this.spriteRenderer.drawSprite(Content.playerTexture, new Rect(
                 Math.random() * this.canvas.width,
                 Math.random() * this.canvas.height,
-                99, 75));
+                10, 10));//how big the sprite is
+        }
+        for (let i = 0; i < 100000; i++) {
+
             this.spriteRenderer.drawSprite(Content.planet, new Rect(
                 Math.random() * this.canvas.width,
                 Math.random() * this.canvas.height,
-                100, 100));
+                10, 10));
         }
         this.spriteRenderer.end();
+
 
         // start game loop 
         window.requestAnimationFrame(() => this.draw());
