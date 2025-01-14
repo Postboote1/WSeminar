@@ -6,7 +6,7 @@ import vertexShaderSource from "./shader/vshader.glsl?raw";
 import fragmentShaderSource from "./shader/fshader.glsl?raw";
 import { ProgramUtil } from "./program-util";
 
-const MaxNumberOfSprites = 100000;
+const MaxNumberOfSprites = 1000;
 const FloatsPerVertex = 7; //data buffer xy,uv,rgb
 const FloatsPerSprite = 4 * FloatsPerVertex; //vertecies per sprite
 const IndiciesPerSprite = 6;
