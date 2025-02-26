@@ -6,10 +6,11 @@ import { SpriteRenderer } from "./sprite-renderer";
 export class Engine {
     private canvas!: HTMLCanvasElement;
     private gl!: WebGL2RenderingContext;
-
+    
     private spriteRenderer!: SpriteRenderer;
 
-
+    private x = 10;
+    private y = 10;
     constructor() {
 
     }
@@ -36,20 +37,24 @@ export class Engine {
 
         this.spriteRenderer.begin();
 
+        this.spriteRenderer.drawSprite(Content.playerTexture, new Rect(this.x,this.y,100, 100));
 
-        for (let i = 0; i < 100000; i++) {
-            this.spriteRenderer.drawSprite(Content.playerTexture, new Rect(
-                Math.random() * this.canvas.width,
-                Math.random() * this.canvas.height,
-                10, 10));//how big the sprite is
-        }
-        for (let i = 0; i < 100000; i++) {
+        //how big the sprite is
+        
 
-            this.spriteRenderer.drawSprite(Content.planet, new Rect(
-                Math.random() * this.canvas.width,
-                Math.random() * this.canvas.height,
-                10, 10));
-        }
+        //for (let i = 0; i < 100; i++) {
+        //    this.spriteRenderer.drawSprite(Content.playerTexture, new Rect(
+        //        Math.random() * this.canvas.width,
+        //        Math.random() * this.canvas.height,
+        //        10, 10));//how big the sprite is
+        //}
+        //for (let i = 0; i < 100; i++) {
+
+        //    this.spriteRenderer.drawSprite(Content.planet, new Rect(
+        //        Math.random() * this.canvas.width,
+        //        Math.random() * this.canvas.height,
+        //        10, 10));
+        //}
         this.spriteRenderer.end();
 
 
