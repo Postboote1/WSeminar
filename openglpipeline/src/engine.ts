@@ -1,4 +1,4 @@
-
+import { vec2 } from "gl-matrix";
 import { Content } from "./content";
 import { Rect } from "./rect";
 import { SpriteRenderer } from "./sprite-renderer";
@@ -27,6 +27,8 @@ export class Engine {
         await this.spriteRenderer.initialize();
 
     }
+
+    rotation = 0; //rotation matrix (wikepedia)
 
     public draw(): void {
 
@@ -57,11 +59,17 @@ export class Engine {
             shieldSprite.sourceRect,
             new Color(1,1,1));
 
-        const size = 742 / 2;
+        const size = 742;
+        this.rotation += 0.01;
+        const origin = vec2.fromValues(0.5,0.5); //define center of rotation
         this.spriteRenderer.drawSpriteSource(
             Content.testUvTexture,
-            new Rect(0, 0, 100, 100),
-            new Rect(0, size, size, size));
+            new Rect(100, 100, 100, 100),
+            new Rect(0, 0 , size, size),
+            undefined,
+            this.rotation,
+            origin
+        );
 
      
 

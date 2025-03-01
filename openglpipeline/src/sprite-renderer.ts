@@ -6,6 +6,7 @@ import { Texture } from "./texture";
 import vertexShaderSource from "./shader/vshader.glsl?raw";
 import fragmentShaderSource from "./shader/fshader.glsl?raw";
 import { Color } from "./color";
+import { vec2 } from "gl-matrix";
 
 const MAX_NUMBER_OF_SPRITES = 1000;
 const FLOATS_PER_VERTEX = 7;
@@ -24,6 +25,12 @@ export class SpriteRenderer {
     private indexBuffer!: WebGLBuffer;
     private data: Float32Array = new Float32Array(FLOATS_PER_SPRITE * MAX_NUMBER_OF_SPRITES);
     private program!: WebGLProgram;
+
+    private v0: vec2 = vec2.create();
+    private v1: vec2 = vec2.create();
+    private v2: vec2 = vec2.create();
+    private v3: vec2 = vec2.create();
+    private _rotationOrigin = vec2.create(); //to rotate around the center
 
     constructor(private gl: WebGL2RenderingContext,
         private width: number, private height: number) {
@@ -95,7 +102,7 @@ export class SpriteRenderer {
 
     }
 
-    public drawSprite(texture: Texture, rect: Rect, color: Color = this.defaultColor) {
+    public drawSprite(texture: Texture, rect: Rect, color: Color = this.defaultColor, rotation = 0, rotationOrigin: vec2|null = null) {
 
         if(this.currentTexture != texture){
             
@@ -105,9 +112,37 @@ export class SpriteRenderer {
         }
         let i = this.instanceCount * FLOATS_PER_SPRITE;
 
+        this.v0[0] = rect.x;
+        this.v0[1] = rect.y;
+        this.v1[0] = rect.x + rect.width;
+        this.v1[1] = rect.y;
+        this.v2[0] = rect.x + rect.width;
+        this.v2[1] = rect.y + rect.height;
+        this.v3[0] = rect.x;
+        this.v3[1] = rect.y + rect.height;
+
+
+        if(rotation != 0) //no rotatin when there is non
+        {
+            this._rotationOrigin[0] = rect.x;
+            this._rotationOrigin[1] = rect.y;
+
+            if(rotationOrigin != null)
+            {
+                this._rotationOrigin[0] += rect.width * rotationOrigin[0]; //rotating around the center of the sprite
+                this._rotationOrigin[1] += rect.height * rotationOrigin[1];
+            }
+            
+            vec2.rotate(this.v0, this.v0, this._rotationOrigin, rotation);
+            vec2.rotate(this.v1, this.v1, this._rotationOrigin, rotation);
+            vec2.rotate(this.v2, this.v2, this._rotationOrigin, rotation);
+            vec2.rotate(this.v3, this.v3, this._rotationOrigin, rotation);
+        }
+
+
         // top left 
-        this.data[0 + i] = rect.x; // x 
-        this.data[1 + i] = rect.y; // y 
+        this.data[0 + i] = this.v0[0]; // x 
+        this.data[1 + i] = this.v0[1]; // y 
         this.data[2 + i] = 0;      // u
         this.data[3 + i] = 1;      // v
         this.data[4 + i] = color.r;      // r
@@ -115,8 +150,8 @@ export class SpriteRenderer {
         this.data[6 + i] = color.b;      // b
 
         // top right
-        this.data[7 + i] = rect.x + rect.width; // x
-        this.data[8 + i] = rect.y;              // y
+        this.data[7 + i] = this.v1[0]; // x
+        this.data[8 + i] = this.v1[1];              // y
         this.data[9 + i] = 1;                   // u
         this.data[10 + i] = 1;                  // v
         this.data[11 + i] = color.r;                  // r
@@ -124,8 +159,8 @@ export class SpriteRenderer {
         this.data[13 + i] = color.b;                  // b
 
         // bottom right
-        this.data[14 + i] = rect.x + rect.width; // x
-        this.data[15 + i] = rect.y + rect.height; // y
+        this.data[14 + i] = this.v2[0]; // x
+        this.data[15 + i] = this.v2[1]; // y
         this.data[16 + i] = 1;                   // u
         this.data[17 + i] = 0;                   // v
         this.data[18 + i] = color.r;                   // r
@@ -133,8 +168,8 @@ export class SpriteRenderer {
         this.data[20 + i] = color.b;                   // b
 
         // bottom left
-        this.data[21 + i] = rect.x; // x
-        this.data[22 + i] = rect.y + rect.height; // y
+        this.data[21 + i] = this.v3[0]; // x
+        this.data[22 + i] = this.v3[1]; // y
         this.data[23 + i] = 0;                   // u
         this.data[24 + i] = 0;                   // v
         this.data[25 + i] = color.r;                   // r
@@ -148,7 +183,8 @@ export class SpriteRenderer {
         }
     }
 
-    public drawSpriteSource(texture: Texture, rect: Rect, sourceRect: Rect, color: Color = this.defaultColor) {
+    public drawSpriteSource(texture: Texture, rect: Rect, sourceRect: Rect, 
+        color: Color = this.defaultColor, rotation = 0, rotationOrigin: vec2|null = null) {
 
         if(this.currentTexture != texture){
             
@@ -158,14 +194,41 @@ export class SpriteRenderer {
         }
         let i = this.instanceCount * FLOATS_PER_SPRITE;
 
+        this.v0[0] = rect.x;
+        this.v0[1] = rect.y;
+        this.v1[0] = rect.x + rect.width;
+        this.v1[1] = rect.y;
+        this.v2[0] = rect.x + rect.width;
+        this.v2[1] = rect.y + rect.height;
+        this.v3[0] = rect.x;
+        this.v3[1] = rect.y + rect.height;
+
+
+        if(rotation != 0)
+        {
+            this._rotationOrigin[0] = rect.x;
+            this._rotationOrigin[1] = rect.y;
+
+            if(rotationOrigin != null)
+            {
+                this._rotationOrigin[0] += rect.width * rotationOrigin[0];
+                this._rotationOrigin[1] += rect.height * rotationOrigin[1];
+            }
+            
+            vec2.rotate(this.v0, this.v0, this._rotationOrigin, rotation);
+            vec2.rotate(this.v1, this.v1, this._rotationOrigin, rotation);
+            vec2.rotate(this.v2, this.v2, this._rotationOrigin, rotation);
+            vec2.rotate(this.v3, this.v3, this._rotationOrigin, rotation);
+        }
+
         let u0 = sourceRect.x / texture.width;
         let v0 = 1 - sourceRect.y / texture.height;
         let u1 = (sourceRect.x + sourceRect.width) / texture.width;
         let v1 = 1 - (sourceRect.y + sourceRect.height) / texture.height;
 
         // top left 
-        this.data[0 + i] = rect.x; // x 
-        this.data[1 + i] = rect.y; // y 
+        this.data[0 + i] = this.v0[0]; // x 
+        this.data[1 + i] = this.v0[1]; // y 
         this.data[2 + i] = u0;      // u
         this.data[3 + i] = v0;      // v
         this.data[4 + i] = color.r;      // r
@@ -173,8 +236,8 @@ export class SpriteRenderer {
         this.data[6 + i] = color.b;      // b
 
         // top right
-        this.data[7 + i] = rect.x + rect.width; // x
-        this.data[8 + i] = rect.y;              // y
+        this.data[7 + i] = this.v1[0]; // x
+        this.data[8 + i] = this.v1[1];              // y
         this.data[9 + i] = u1;                   // u
         this.data[10 + i] = v0;                  // v
         this.data[11 + i] = color.r;                  // r
@@ -182,8 +245,8 @@ export class SpriteRenderer {
         this.data[13 + i] = color.b;                  // b
 
         // bottom right
-        this.data[14 + i] = rect.x + rect.width; // x
-        this.data[15 + i] = rect.y + rect.height; // y
+        this.data[14 + i] = this.v2[0]; // x
+        this.data[15 + i] = this.v2[1]; // y
         this.data[16 + i] = u1;                   // u
         this.data[17 + i] = v1;                   // v
         this.data[18 + i] = color.r;                   // r
@@ -191,8 +254,8 @@ export class SpriteRenderer {
         this.data[20 + i] = color.b;                   // b
 
         // bottom left
-        this.data[21 + i] = rect.x; // x
-        this.data[22 + i] = rect.y + rect.height; // y
+        this.data[21 + i] = this.v3[0]; // x
+        this.data[22 + i] = this.v3[1]; // y
         this.data[23 + i] = u0;                   // u
         this.data[24 + i] = v1;                   // v
         this.data[25 + i] = color.r;                   // r
