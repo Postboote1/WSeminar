@@ -2,6 +2,7 @@
 import { Content } from "./content";
 import { Rect } from "./rect";
 import { SpriteRenderer } from "./sprite-renderer";
+import { Color } from "./color";
 
 export class Engine {
     private canvas!: HTMLCanvasElement;
@@ -9,8 +10,6 @@ export class Engine {
     
     private spriteRenderer!: SpriteRenderer;
 
-    private x = 10;
-    private y = 10;
     constructor() {
 
     }
@@ -37,7 +36,35 @@ export class Engine {
 
         this.spriteRenderer.begin();
 
-        this.spriteRenderer.drawSprite(Content.playerTexture, new Rect(this.x,this.y,100, 100));
+        const playerSprite =  Content.sprites["playerShip1_blue"];
+
+        playerSprite.drawRect.x += 1;
+        playerSprite.drawRect.y += 1;
+
+        this.spriteRenderer.drawSpriteSource(
+            playerSprite.texture,
+            playerSprite.drawRect,
+            playerSprite.sourceRect);
+
+        const shieldSprite = Content.sprites["shield3"];
+
+        shieldSprite.drawRect.x = playerSprite.drawRect.x - 22;
+        shieldSprite.drawRect.y = playerSprite.drawRect.y - 25;
+
+        this.spriteRenderer.drawSpriteSource(
+            shieldSprite.texture,
+            shieldSprite.drawRect,
+            shieldSprite.sourceRect,
+            new Color(1,1,1));
+
+        const size = 742 / 2;
+        this.spriteRenderer.drawSpriteSource(
+            Content.testUvTexture,
+            new Rect(0, 0, 100, 100),
+            new Rect(0, size, size, size));
+
+     
+
 
         //how big the sprite is
         
