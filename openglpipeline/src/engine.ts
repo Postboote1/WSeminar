@@ -39,14 +39,18 @@ export class Engine {
         this.spriteRenderer.begin();
 
         const playerSprite =  Content.sprites["playerShip1_blue"];
+        const origin = vec2.fromValues(0.5,0.5);  //define center of rotation
 
-        playerSprite.drawRect.x += 1;
-        playerSprite.drawRect.y += 1;
+        playerSprite.drawRect.x += 0.1;
+        playerSprite.drawRect.y += 0.1;
 
         this.spriteRenderer.drawSpriteSource(
             playerSprite.texture,
             playerSprite.drawRect,
-            playerSprite.sourceRect);
+            playerSprite.sourceRect,
+            undefined,
+            this.rotation,
+        );
 
         const shieldSprite = Content.sprites["shield3"];
 
@@ -57,11 +61,14 @@ export class Engine {
             shieldSprite.texture,
             shieldSprite.drawRect,
             shieldSprite.sourceRect,
-            new Color(1,1,1));
+            new Color(1,1,1),
+            this.rotation,
+            origin
+        );
 
         const size = 742;
         this.rotation += 0.01;
-        const origin = vec2.fromValues(0.5,0.5); //define center of rotation
+
         this.spriteRenderer.drawSpriteSource(
             Content.testUvTexture,
             new Rect(100, 100, 100, 100),
@@ -83,8 +90,7 @@ export class Engine {
         //        Math.random() * this.canvas.height,
         //        10, 10));//how big the sprite is
         //}
-        //for (let i = 0; i < 100; i++) {
-
+        //for (let i = 0; i < 100; i++) //
         //    this.spriteRenderer.drawSprite(Content.planet, new Rect(
         //        Math.random() * this.canvas.width,
         //        Math.random() * this.canvas.height,
