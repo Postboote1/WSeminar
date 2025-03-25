@@ -42,4 +42,8 @@ export class Content
         });
 
     }
+    // New method to get all sprite names
+    public static getSpriteNames(): string[] {
+        return Object.keys(this.sprites);
+    }
 }
