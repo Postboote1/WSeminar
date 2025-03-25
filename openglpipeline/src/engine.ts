@@ -21,13 +21,49 @@ export class Engine {
     private spriteRenderer!: SpriteRenderer;
     private renderableSprites: RenderableSprite[] = [];
 
+    // FPS tracking
+    private fpsCounter: HTMLElement;
+    private frameCount = 0;
+    private lastFpsUpdate = 0;
+
     constructor() {
         this.setupEventListeners();
+        this.fpsCounter = document.getElementById('fps-counter')!;
     }
 
     private setupEventListeners() {
         document.getElementById('addSpriteBtn')?.addEventListener('click', () => this.addSprite());
         document.getElementById('clearSpritesBtn')?.addEventListener('click', () => this.clearSprites());
+        document.getElementById('performanceTestBtn')?.addEventListener('click', () => this.runPerformanceTest());
+    }
+
+    private runPerformanceTest() {
+        this.clearSprites();
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        const spriteNames = Object.keys(Content.sprites);
+
+        for (let i = 0; i < 10000; i++) {
+            // Randomly select a sprite
+            const spriteName = spriteNames[Math.floor(Math.random() * spriteNames.length)];
+            const sprite = Content.sprites[spriteName];
+
+            // Random position
+            const x = Math.random() * (canvasWidth - sprite.drawRect.width);
+            const y = Math.random() * (canvasHeight - sprite.drawRect.height);
+
+            // Random rotation speed
+            const rotationSpeed = (Math.random() - 0.5) * 0.2;
+
+            this.renderableSprites.push({
+                sprite,
+                x,
+                y,
+                rotation: 0,
+                rotationOrigin: vec2.fromValues(0.5, 0.5),
+                rotationSpeed
+            });
+        }
     }
 
     private addSprite() {
@@ -79,7 +115,16 @@ export class Engine {
         await this.spriteRenderer.initialize();
     }
 
-    public draw(): void {
+    public draw(timestamp: number): void {
+        // FPS Calculation
+        this.frameCount++;
+        if (timestamp >= this.lastFpsUpdate + 1000) {
+            const fps = this.frameCount;
+            this.fpsCounter.textContent = `FPS: ${fps}`;
+            this.frameCount = 0;
+            this.lastFpsUpdate = timestamp;
+        }
+
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.clearColor(0.8, 0.8, 0.8, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -107,6 +152,6 @@ export class Engine {
         this.spriteRenderer.end();
 
         // start game loop 
-        window.requestAnimationFrame(() => this.draw());
+        window.requestAnimationFrame((ts) => this.draw(ts));
     }
 }
