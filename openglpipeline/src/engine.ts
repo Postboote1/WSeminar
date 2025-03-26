@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import { vec2, mat4 } from "gl-matrix";
 import { Content } from "./content";
 import { Rect } from "./rect";
 import { SpriteRenderer } from "./sprite-renderer";
@@ -7,11 +7,12 @@ import { Sprite } from "./sprite";
 
 interface RenderableSprite {
     sprite: Sprite;
-    x: number;
-    y: number;
+    position: vec2;
     rotation: number;
     rotationOrigin: vec2;
     rotationSpeed: number;
+    movementSpeed: vec2;
+    isMovable: boolean;
 }
 
 export class Engine {
@@ -26,6 +27,10 @@ export class Engine {
     private frameCount = 0;
     private lastFpsUpdate = 0;
 
+    // Keyboard state
+    private keysPressed: Set<string> = new Set();
+    private baseMovementSpeed = 5; // pixels per frame
+
     constructor() {
         this.setupEventListeners();
         this.fpsCounter = document.getElementById('fps-counter')!;
@@ -35,6 +40,73 @@ export class Engine {
         document.getElementById('addSpriteBtn')?.addEventListener('click', () => this.addSprite());
         document.getElementById('clearSpritesBtn')?.addEventListener('click', () => this.clearSprites());
         document.getElementById('performanceTestBtn')?.addEventListener('click', () => this.runPerformanceTest());
+
+        // Add keyboard event listeners
+        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+
+        // Add checkbox for sprite movement
+        const movementCheckbox = document.createElement('input');
+        movementCheckbox.type = 'checkbox';
+        movementCheckbox.id = 'enableSpriteMovement';
+        
+        const label = document.createElement('label');
+        label.htmlFor = 'enableSpriteMovement';
+        label.textContent = 'Enable Sprite Movement';
+
+        const controlsDiv = document.getElementById('controls');
+        controlsDiv?.appendChild(movementCheckbox);
+        controlsDiv?.appendChild(label);
+    }
+
+    private handleKeyDown(event: KeyboardEvent) {
+        this.keysPressed.add(event.key.toLowerCase());
+    }
+
+    private handleKeyUp(event: KeyboardEvent) {
+        this.keysPressed.delete(event.key.toLowerCase());
+    }
+
+    private moveSprites() {
+        const enableMovementCheckbox = document.getElementById('enableSpriteMovement') as HTMLInputElement;
+        
+        if (!enableMovementCheckbox?.checked) return;
+
+        this.renderableSprites.forEach(renderableSprite => {
+            if (!renderableSprite.isMovable) return;
+
+            // Reset movement speed
+            renderableSprite.movementSpeed = vec2.fromValues(0, 0);
+
+            // Horizontal movement
+            if (this.keysPressed.has('arrowright')) {
+                renderableSprite.movementSpeed[0] += this.baseMovementSpeed;
+            }
+            if (this.keysPressed.has('arrowleft')) {
+                renderableSprite.movementSpeed[0] -= this.baseMovementSpeed;
+            }
+
+            // Vertical movement
+            if (this.keysPressed.has('arrowup')) {
+                renderableSprite.movementSpeed[1] -= this.baseMovementSpeed;
+            }
+            if (this.keysPressed.has('arrowdown')) {
+                renderableSprite.movementSpeed[1] += this.baseMovementSpeed;
+            }
+
+            // Apply movement using vec2 transformation
+            vec2.add(renderableSprite.position, renderableSprite.position, renderableSprite.movementSpeed);
+
+            // Constrain sprite to canvas
+            renderableSprite.position[0] = Math.max(0, Math.min(
+                renderableSprite.position[0], 
+                this.canvas.width - renderableSprite.sprite.drawRect.width
+            ));
+            renderableSprite.position[1] = Math.max(0, Math.min(
+                renderableSprite.position[1], 
+                this.canvas.height - renderableSprite.sprite.drawRect.height
+            ));
+        });
     }
 
     private runPerformanceTest() {
@@ -57,11 +129,12 @@ export class Engine {
 
             this.renderableSprites.push({
                 sprite,
-                x,
-                y,
+                position: vec2.fromValues(x, y),
                 rotation: 0,
                 rotationOrigin: vec2.fromValues(0.5, 0.5),
-                rotationSpeed
+                rotationSpeed,
+                movementSpeed: vec2.create(),
+                isMovable: false
             });
         }
     }
@@ -90,11 +163,15 @@ export class Engine {
 
         this.renderableSprites.push({
             sprite,
-            x: parseFloat(xPositionInput.value),
-            y: parseFloat(yPositionInput.value),
+            position: vec2.fromValues(
+                parseFloat(xPositionInput.value), 
+                parseFloat(yPositionInput.value)
+            ),
             rotation: 0,
             rotationOrigin,
-            rotationSpeed: parseFloat(rotationSpeedInput.value)
+            rotationSpeed: parseFloat(rotationSpeedInput.value),
+            movementSpeed: vec2.create(),
+            isMovable: true
         });
     }
 
@@ -125,6 +202,9 @@ export class Engine {
             this.lastFpsUpdate = timestamp;
         }
 
+        // Move sprites based on keyboard input
+        this.moveSprites();
+
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.clearColor(0.8, 0.8, 0.8, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -132,11 +212,13 @@ export class Engine {
         this.spriteRenderer.begin();
 
         this.renderableSprites.forEach(renderableSprite => {
-            const { sprite, x, y, rotation, rotationOrigin, rotationSpeed } = renderableSprite;
+            const { sprite, position, rotation, rotationOrigin, rotationSpeed } = renderableSprite;
             
-            sprite.drawRect.x = x;
-            sprite.drawRect.y = y;
+            // Update sprite draw rect with vec2 position
+            sprite.drawRect.x = position[0];
+            sprite.drawRect.y = position[1];
 
+            // Update rotation
             renderableSprite.rotation += rotationSpeed;
 
             this.spriteRenderer.drawSpriteSource(
