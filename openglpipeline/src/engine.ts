@@ -14,6 +14,7 @@ interface RenderableSprite {
     rotationSpeed: number;   // Speed of rotation
     movementSpeed: vec2;     // Current movement velocity
     isMovable: boolean;      // Whether the sprite can be moved by keyboard
+    movementAngle: number;   // Angle of movement for auto-rotation
 }
 
 export class Engine {
@@ -50,7 +51,7 @@ export class Engine {
      * Set up all event listeners for user interactions
      */
     private setupEventListeners() {
-        // Button event listeners
+        // Existing button event listeners
         document.getElementById('addSpriteBtn')?.addEventListener('click', () => this.addSprite());
         document.getElementById('clearSpritesBtn')?.addEventListener('click', () => this.clearSprites());
         document.getElementById('performanceTestBtn')?.addEventListener('click', () => this.runPerformanceTest());
@@ -59,18 +60,16 @@ export class Engine {
         window.addEventListener('keydown', (e) => this.handleKeyDown(e));
         window.addEventListener('keyup', (e) => this.handleKeyUp(e));
 
-        // Dynamically create a checkbox to enable/disable sprite movement
-        const movementCheckbox = document.createElement('input');
-        movementCheckbox.type = 'checkbox';
-        movementCheckbox.id = 'enableSpriteMovement';
-        
-        const label = document.createElement('label');
-        label.htmlFor = 'enableSpriteMovement';
-        label.textContent = 'Enable Sprite Movement';
-
+        // Remove previous movement checkbox creation
         const controlsDiv = document.getElementById('controls');
-        controlsDiv?.appendChild(movementCheckbox);
-        controlsDiv?.appendChild(label);
+        
+        // Create a new button for enabling sprite movement
+        const enableMovementBtn = document.createElement('button');
+        enableMovementBtn.id = 'enableSpriteMovementBtn';
+        enableMovementBtn.textContent = 'Enable Sprite Movement';
+        enableMovementBtn.addEventListener('click', () => this.enableSpriteMovement());
+        
+        controlsDiv?.appendChild(enableMovementBtn);
     }
 
     /**
@@ -87,15 +86,23 @@ export class Engine {
         this.keysPressed.delete(event.key.toLowerCase());
     }
 
+    private enableSpriteMovement() {
+        // Find the most recently added movable sprite
+        const movableSprite = this.renderableSprites.findLast(sprite => !sprite.isMovable);
+        
+        if (movableSprite) {
+            // Enable movement for this sprite
+            movableSprite.isMovable = true;
+            
+            // Disable the movement button after enabling
+            const enableMovementBtn = document.getElementById('enableSpriteMovementBtn') as HTMLButtonElement;
+            enableMovementBtn.disabled = true;
+        }
+    }
     /**
      * Move sprites based on keyboard input
      */
     private moveSprites() {
-        // Check if movement is enabled via checkbox
-        const enableMovementCheckbox = document.getElementById('enableSpriteMovement') as HTMLInputElement;
-        
-        if (!enableMovementCheckbox?.checked) return;
-
         this.renderableSprites.forEach(renderableSprite => {
             // Skip non-movable sprites
             if (!renderableSprite.isMovable) return;
@@ -121,6 +128,17 @@ export class Engine {
 
             // Apply movement
             vec2.add(renderableSprite.position, renderableSprite.position, renderableSprite.movementSpeed);
+
+            // Calculate movement angle for rotation
+            if (renderableSprite.movementSpeed[0] !== 0 || renderableSprite.movementSpeed[1] !== 0) {
+                renderableSprite.movementAngle = Math.atan2(
+                    renderableSprite.movementSpeed[1], 
+                    renderableSprite.movementSpeed[0]
+                );
+                
+                // Set rotation to match movement direction
+                renderableSprite.rotation = renderableSprite.movementAngle + Math.PI / 2;
+            }
 
             // Constrain sprite to canvas boundaries
             renderableSprite.position[0] = Math.max(0, Math.min(
@@ -165,7 +183,8 @@ export class Engine {
                 rotationOrigin: vec2.fromValues(0.5, 0.5),
                 rotationSpeed,
                 movementSpeed: vec2.create(),
-                isMovable: false
+                isMovable: false,
+                movementAngle: 0
             });
         }
     }
@@ -198,6 +217,10 @@ export class Engine {
                 rotationOrigin = vec2.fromValues(0.5, 0.5);
         }
 
+        // Enable the movement button
+        const enableMovementBtn = document.getElementById('enableSpriteMovementBtn') as HTMLButtonElement;
+        enableMovementBtn.disabled = false;
+
         // Add new renderable sprite to the collection
         this.renderableSprites.push({
             sprite,
@@ -209,7 +232,8 @@ export class Engine {
             rotationOrigin,
             rotationSpeed: parseFloat(rotationSpeedInput.value),
             movementSpeed: vec2.create(),
-            isMovable: true
+            isMovable: false,  // Set to false initially
+            movementAngle: 0   // Add movement angle tracking
         });
     }
 
